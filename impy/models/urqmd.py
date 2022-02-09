@@ -78,11 +78,11 @@ class UrQMDEvent(MCEvent):
 
 
 class UrQMDRun(MCRun):
-    """Implements all abstract attributes of MCRun for the 
+    """Implements all abstract attributes of MCRun for the
     UrQMD series of event generators.
-    
+
     The version included here is UrQMD 3.4. The manual and further
-    references can be accessed on this webpage https://urqmd.org/. 
+    references can be accessed on this webpage https://urqmd.org/.
     """
 
     def __init__(self, *args, **kwargs):
@@ -105,8 +105,14 @@ class UrQMDRun(MCRun):
             # Special projectile
             self.lib.inputs.prspflg = 1
             self.lib.sys.ap = 1
-            self.lib.inputs.spityp[0] = self.stab.pdg2modid[k.p1pdg][0]
-            self.lib.inputs.spiso3[0] = self.stab.pdg2modid[k.p1pdg][1]
+            if k.p1pdg != 130:
+                self.lib.inputs.spityp[0] = self.stab.pdg2modid[k.p1pdg][0]
+                self.lib.inputs.spiso3[0] = self.stab.pdg2modid[k.p1pdg][1]
+            else:
+                # TK: replace KL0 with a 50/50 combination of K0(311), K0bar(-311)
+                k0_k0bar = np.random.choice([311, -311])
+                self.lib.inputs.spityp[0] = self.stab.pdg2modid[k0_k0bar][0]
+                self.lib.inputs.spiso3[0] = self.stab.pdg2modid[k0_k0bar][1]
         else:
             self.lib.inputs.prspflg = 0
             self.lib.sys.ap = k.A1
@@ -129,14 +135,14 @@ class UrQMDRun(MCRun):
             self.lib.nucrad(self.lib.sys.at) +
             2 * self.lib.options.ctparam[30-1])
 
-        
+
         # Output only correct in lab frame, don't try using the
         # "equal speed" frame.
         self.lib.input2.pbeam = k.plab
         self.lib.inputs.srtflag = 2
 
         # Unclear what the effect of the equation of state is but
-        # should be required for very low energy. 
+        # should be required for very low energy.
         if k.plab > 4.9:
             self.lib.inputs.eos = 0
             # This is the fast method as set default in urqinit.f
@@ -188,7 +194,7 @@ class UrQMDRun(MCRun):
 
         # Disable elastic collision
         self.lib.options.ctoption[7-1] = 1
-        
+
         # Change CTParams and/or CTOptions if needed
         if 'CTParams' in impy_config['urqmd']:
             for ctp in impy_config['urqmd']['CTParams']:
